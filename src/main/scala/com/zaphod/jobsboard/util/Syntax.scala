@@ -1,4 +1,4 @@
-package com.zaphod.jobsboard.config
+package com.zaphod.jobsboard.util
 
 import cats.MonadThrow
 import cats.effect.IO
@@ -14,4 +14,7 @@ object Syntax {
         errors => F.raiseError(ConfigReaderException(errors)),
         value => F.pure(value)
       )
+
+  extension (b: Boolean)
+    def option[A](a: A): Option[A] = if (b) Option[A](a) else Option.empty[A]
 }

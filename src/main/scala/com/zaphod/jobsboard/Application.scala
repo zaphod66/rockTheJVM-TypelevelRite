@@ -10,7 +10,7 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.*
 import pureconfig.ConfigSource
 import com.zaphod.jobsboard.config.{AppConfig, EmberConfig}
-import com.zaphod.jobsboard.config.Syntax.*
+import com.zaphod.jobsboard.util.Syntax.*
 import com.zaphod.jobsboard.modules.{Core, Database, HttpApi}
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
