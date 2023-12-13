@@ -4,6 +4,7 @@ import pureconfig.ConfigReader
 import pureconfig.generic.derivation.default.*
 import com.comcast.ip4s.{Host, Port}
 import pureconfig.error.CannotConvert
+
 final case class EmberConfig (host: Host, port: Port) derives ConfigReader
 
 object EmberConfig {

@@ -9,9 +9,9 @@ import org.http4s.dsl.impl.*
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.*
 import pureconfig.ConfigSource
-import com.zaphod.jobsboard.config.EmberConfig
+import com.zaphod.jobsboard.config.{AppConfig, EmberConfig}
 import com.zaphod.jobsboard.config.Syntax.*
-import com.zaphod.jobsboard.modules.{Core, HttpApi}
+import com.zaphod.jobsboard.modules.{Core, Database, HttpApi}
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
@@ -20,18 +20,20 @@ object Application extends IOApp.Simple {
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   override def run: IO[Unit] =
-    ConfigSource.default.loadF[IO, EmberConfig].flatMap { config =>
-      val appServer = for {
-        core <- Core[IO]
-        http <- HttpApi[IO](core)
-        server <- EmberServerBuilder
-          .default[IO]
-          .withHost(config.host)
-          .withPort(config.port)
-          .withHttpApp(http.routes.orNotFound)
-          .build
-      } yield server
-
-      appServer.use(_ => IO.println("Server ready.") *> IO.never)
+    ConfigSource.default.loadF[IO, AppConfig].flatMap {
+      case AppConfig(dbConfig, emberConfig) =>
+        val appServer = for {
+          xa <- Database[IO](dbConfig)
+          core <- Core[IO](xa)
+          http <- HttpApi[IO](core)
+          server <- EmberServerBuilder
+            .default[IO]
+            .withHost(emberConfig.host)
+            .withPort(emberConfig.port)
+            .withHttpApp(http.routes.orNotFound)
+            .build
+        } yield server
+  
+        appServer.use(_ => IO.println("Server ready.") *> IO.never)
     }
 }
