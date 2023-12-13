@@ -11,8 +11,7 @@ import org.http4s.server.*
 import pureconfig.ConfigSource
 import com.zaphod.jobsboard.config.EmberConfig
 import com.zaphod.jobsboard.config.Syntax.*
-import com.zaphod.jobsboard.http.HttpApi
-
+import com.zaphod.jobsboard.modules.{Core, HttpApi}
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 
@@ -22,12 +21,17 @@ object Application extends IOApp.Simple {
 
   override def run: IO[Unit] =
     ConfigSource.default.loadF[IO, EmberConfig].flatMap { config =>
-      EmberServerBuilder
-        .default[IO]
-        .withHost(config.host)
-        .withPort(config.port)
-        .withHttpApp(HttpApi[IO].routes.orNotFound)
-        .build
-        .use(_ => IO.println("Server ready.") *> IO.never)
+      val appServer = for {
+        core <- Core[IO]
+        http <- HttpApi[IO](core)
+        server <- EmberServerBuilder
+          .default[IO]
+          .withHost(config.host)
+          .withPort(config.port)
+          .withHttpApp(http.routes.orNotFound)
+          .build
+      } yield server
+
+      appServer.use(_ => IO.println("Server ready.") *> IO.never)
     }
 }

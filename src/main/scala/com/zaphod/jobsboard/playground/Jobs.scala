@@ -12,7 +12,7 @@ import scala.io.StdIn
 
 object Jobs extends IOApp.Simple {
 
-  val pgResource: Resource[IO, HikariTransactor[IO]] = for {
+  private val pgResource: Resource[IO, HikariTransactor[IO]] = for {
     ec <- ExecutionContexts.fixedThreadPool(32)
     xa <- HikariTransactor.newHikariTransactor[IO](
       "org.postgresql.Driver",
@@ -23,8 +23,8 @@ object Jobs extends IOApp.Simple {
     )
   } yield xa
 
-  val jobInfo1 = JobInfo.minimal("Home Company", "Engineer", "best job", "home.com", true, "Germany")
-  val jobInfo2 = JobInfo.minimal("Home Company", "Cook", "best cook", "home.com", false, "Germany, Hamburg")
+  private val jobInfo1 = JobInfo.minimal("Home Company", "Engineer", "best job", "home.com", true, "Germany")
+  private val jobInfo2 = JobInfo.minimal("Home Company", "Cook", "best cook", "home.com", false, "Germany, Hamburg")
 
   // connect from cmdline "> docker exec -it rockthejvm-typelevelrite-db-1 psql -U docker"
   override def run: IO[Unit] = pgResource.use { xa =>
