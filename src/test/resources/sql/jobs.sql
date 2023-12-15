@@ -44,11 +44,11 @@ INSERT INTO jobs(
 ) VALUES (
   '843df718-ec6e-4d49-9289-f799c0f40064', -- id
   1659186086, -- date
-  'daniel@rockthejvm.com', -- ownerEmail
+  'me@home.com', -- ownerEmail
   'Awesome Company', -- company
   'Tech Lead', -- title
   'An awesome job in Berlin', -- description
-  'https://rockthejvm.com/awesomejob', -- externalURL
+  'https://home.com/awesomejob', -- externalURL
   false, -- remote
   'Berlin', -- location
   2000, -- salaryLo

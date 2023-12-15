@@ -16,12 +16,12 @@ trait JobsFixture {
   val AwesomeJob: Job = Job(
     AwesomeJobUuid,
     1659186086L,
-    "daniel@rockthejvm.com",
+    "me@home.com",
     JobInfo(
       "Awesome Company",
       "Tech Lead",
       "An awesome job in Berlin",
-      "https://rockthejvm.com/awesomejob",
+      "https://home.com/awesomejob",
       false,
       "Berlin",
       2000.some,
@@ -45,7 +45,7 @@ trait JobsFixture {
   val UpdatedAwesomeJob: Job = Job(
     AwesomeJobUuid,
     1659186086L,
-    "daniel@rockthejvm.com",
+    "me@home.com",
     JobInfo(
       "Awesome Company (Spain Branch)",
       "Engineering Manager",
@@ -94,7 +94,7 @@ trait JobsFixture {
     "Awesome Company",
     "Tech Lead",
     "An awesome job in Berlin",
-    "example.com",
+    "https://example.com",
     false,
     "Berlin",
     2000.some,

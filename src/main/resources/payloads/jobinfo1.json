@@ -2,7 +2,7 @@
   "company" : "Home AG",
   "title" : "Software Engineer",
   "description" : "best job",
-  "externalURL" : "home.com",
+  "externalURL" : "https://home.com",
   "remote" : false,
   "location" : "Hamburg Germany"
 }

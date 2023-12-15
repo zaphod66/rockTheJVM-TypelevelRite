@@ -4,22 +4,23 @@ import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*
 import cats.effect.Concurrent
 import cats.implicits.*
+import com.zaphod.jobsboard.Application.logger
 import com.zaphod.jobsboard.core.Jobs
 import com.zaphod.jobsboard.modules.*
 import com.zaphod.jobsboard.domain.job.*
 import com.zaphod.jobsboard.logging.syntax.*
+import com.zaphod.jobsboard.http.validation.syntax.*
 import com.zaphod.jobsboard.http.responses.FailureResponse
 import org.http4s.*
 import org.http4s.dsl.*
 import org.http4s.dsl.impl.*
 import org.http4s.server.*
-
 import org.typelevel.log4cats.Logger
 
 import java.util
 import java.util.UUID
 
-class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends Http4sDsl[F] {
+class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends HttpValidationDsl[F] {
 
   // POST /jobs
   private val allJobs: HttpRoutes[F] = HttpRoutes.of[F] {
@@ -42,24 +43,26 @@ class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends Http4s
   // POST /jobs/create { jobInfo }
   private val createJob: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ POST -> Root / "create" =>
-      for {
-        jobInfo <- req.as[JobInfo].logError(e => s"Parsing payload failed: $e")
-        id <- jobs.create("cto@home.com", jobInfo)
-        res <- Created(id)
-      } yield res
+      req.validate[JobInfo] { jobInfo =>
+        for {
+          id <- jobs.create("cto@home.com", jobInfo)
+          res <- Created(id)
+        } yield res
+      }
   }
 
   // PUT /jobs/uuid { jobInfo }
   private val updateJob: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ PUT -> Root / UUIDVar(id) =>
-      for {
-        jobInfo <- req.as[JobInfo].logError(e => s"Parsing payload failed: $e")
-        jobsF <- jobs.update(id, jobInfo)
-        res <- jobsF match {
-          case Some(_) => Ok()
-          case None => NotFound(FailureResponse(s"Cannot update job $id: not Found."))
-        }
-      } yield res
+      req.validate[JobInfo] { jobInfo =>
+        for {
+          jobsF <- jobs.update(id, jobInfo)
+          res <- jobsF match {
+            case Some(_) => Ok()
+            case None => NotFound(FailureResponse(s"Cannot update job $id: not Found."))
+          }
+        } yield res
+      }
   }
 
   // DELETE /jobs/uuid
