@@ -19,7 +19,7 @@ import org.scalatest.matchers.should.Matchers
 
 import com.zaphod.jobsboard.core.Jobs
 import com.zaphod.jobsboard.domain.job.{Job, JobInfo}
-import com.zaphod.jobsboard.fixtures.JobFixture
+import com.zaphod.jobsboard.fixtures.JobsFixture
 import com.zaphod.jobsboard.util.Syntax.*
 
 import java.util.UUID
@@ -29,7 +29,7 @@ class JobRoutesSpec
   with AsyncIOSpec
   with Matchers
   with Http4sDsl[IO]
-  with JobFixture
+  with JobsFixture
 {
 
   ///////////////////////////////////////////

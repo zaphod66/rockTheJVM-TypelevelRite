@@ -7,7 +7,7 @@ import com.zaphod.jobsboard.domain.job
 
 import java.util.UUID
 
-trait JobFixture {
+trait JobsFixture {
 
   val NotFoundJobUuid: UUID = UUID.fromString("6ea79557-3112-4c84-a8f5-1d1e2c300948")
 
@@ -64,11 +64,11 @@ trait JobFixture {
     )
   )
 
-  val RockTheJvmNewJob: JobInfo = JobInfo(
-    "RockTheJvm",
+  val NewJobInfo: JobInfo = JobInfo(
+    "Holistic Creators",
     "Technical Author",
-    "For the glory of the RockTheJvm!",
-    "https://rockthejvm.com/",
+    "For the glory of the Holistics!",
+    "https://holisticcreators.com/",
     true,
     "From remote",
     2000.some,
@@ -81,7 +81,7 @@ trait JobFixture {
     None
   )
 
-  val RockTheJvmJobWithNotFoundId: Job = AwesomeJob.copy(id = NotFoundJobUuid)
+  val AwesomeJobWithNotFoundId: Job = AwesomeJob.copy(id = NotFoundJobUuid)
 
   val AnotherAwesomeJobUuid: UUID = UUID.fromString("19a941d0-aa19-477b-9ab0-a7033ae65c2b")
   val AnotherAwesomeJob: Job = AwesomeJob.copy(id = AnotherAwesomeJobUuid)
