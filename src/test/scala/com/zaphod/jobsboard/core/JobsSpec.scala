@@ -2,15 +2,17 @@ package com.zaphod.jobsboard.core
 
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
+import com.zaphod.jobsboard.domain.job.JobFilter
+import com.zaphod.jobsboard.domain.pagination.Pagination
 import org.http4s.dsl.Http4sDsl
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
-
 import doobie.*
 import doobie.implicits.*
 import doobie.postgres.implicits.*
-
 import com.zaphod.jobsboard.fixtures.JobsFixture
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 class JobsSpec
   extends AsyncFreeSpec
@@ -21,6 +23,8 @@ class JobsSpec
     with DatabaseSpec
 {
   val initScript = "sql/jobs.sql"
+
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   "Jobs algebra" - {
     "find should return None, if UUID does not exist" in {
@@ -115,6 +119,39 @@ class JobsSpec
       } yield num
 
       prog.asserting(_ shouldBe 0)
+    }
+  }
+
+  "all should filter remote jobs 1" in {
+    xaResource.use { xa =>
+      val prog = for {
+        jobs <- LiveJobs[IO](xa)
+        filteredJobs <- jobs.all(JobFilter(remote=true), Pagination.default)
+      } yield filteredJobs
+
+      prog.asserting(_ shouldBe List())
+    }
+  }
+
+  "all should filter remote jobs 2" in {
+    xaResource.use { xa =>
+      val prog = for {
+        jobs <- LiveJobs[IO](xa)
+        filteredJobs <- jobs.all(JobFilter(remote=false), Pagination.default)
+      } yield filteredJobs
+
+      prog.asserting(_ shouldBe List(AwesomeJob))
+    }
+  }
+
+  "all should filter jobs by tags" in {
+    xaResource.use { xa =>
+      val prog = for {
+        jobs <- LiveJobs[IO](xa)
+        filteredJobs <- jobs.all(JobFilter(tags = List("scala", "cats", "zio")), Pagination.default)
+      } yield filteredJobs
+
+      prog.asserting(_ shouldBe List(AwesomeJob))
     }
   }
 }

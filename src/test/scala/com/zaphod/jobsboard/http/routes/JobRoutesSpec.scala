@@ -3,22 +3,18 @@ package com.zaphod.jobsboard.http.routes
 import cats.implicits.*
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-
 import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*
-
 import org.http4s.*
 import org.http4s.dsl.*
 import org.http4s.implicits.*
-
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
-
 import com.zaphod.jobsboard.core.Jobs
-import com.zaphod.jobsboard.domain.job.{Job, JobInfo}
+import com.zaphod.jobsboard.domain.job.{Job, JobInfo, JobFilter}
+import com.zaphod.jobsboard.domain.pagination.Pagination
 import com.zaphod.jobsboard.fixtures.JobsFixture
 import com.zaphod.jobsboard.util.Syntax.*
 
@@ -42,6 +38,10 @@ class JobRoutesSpec
 
     override def all(): IO[List[Job]] =
       IO.pure(List(AwesomeJob))
+
+    override def all(filter: JobFilter, pagination: Pagination): IO[List[Job]] =
+      if (filter.remote) IO.pure(List.empty[Job])
+      else IO.pure(List(AwesomeJob))
 
     override def find(id: UUID): IO[Option[Job]] =
       IO.pure( (id == AwesomeJobUuid).option(AwesomeJob) )
@@ -77,7 +77,27 @@ class JobRoutesSpec
 
     "should return all jobs" in {
       for {
-        resp <-jobRoutesNF.run(Request(method = Method.POST, uri = uri"/jobs"))
+        resp <-jobRoutesNF.run(Request(method = Method.POST, uri = uri"/jobs").withEntity(JobFilter()))
+        jobsOk  <- resp.as[List[Job]]
+      } yield {
+        resp.status shouldBe Status.Ok
+        jobsOk shouldBe List(AwesomeJob)
+      }
+    }
+
+    "should return all jobs satisfying a filter 1" in {
+      for {
+        resp <-jobRoutesNF.run(Request(method = Method.POST, uri = uri"/jobs").withEntity(JobFilter(remote=true)))
+        jobsOk  <- resp.as[List[Job]]
+      } yield {
+        resp.status shouldBe Status.Ok
+        jobsOk shouldBe List()
+      }
+    }
+
+    "should return all jobs satisfying a filter 2" in {
+      for {
+        resp <-jobRoutesNF.run(Request(method = Method.POST, uri = uri"/jobs").withEntity(JobFilter(remote=false)))
         jobsOk  <- resp.as[List[Job]]
       } yield {
         resp.status shouldBe Status.Ok

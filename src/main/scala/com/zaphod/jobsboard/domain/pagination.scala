@@ -8,5 +8,7 @@ object pagination {
 
     def apply(limitF: Option[Int], offsetF: Option[Int]) =
       new Pagination(limitF.getOrElse(defaultPageSize), offsetF.getOrElse(0))
+
+    val default = new Pagination(defaultPageSize, 0)
   }
 }
