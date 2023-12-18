@@ -8,6 +8,7 @@ import com.zaphod.jobsboard.Application.logger
 import com.zaphod.jobsboard.core.Jobs
 import com.zaphod.jobsboard.modules.*
 import com.zaphod.jobsboard.domain.job.*
+import com.zaphod.jobsboard.domain.pagination.Pagination
 import com.zaphod.jobsboard.logging.syntax.*
 import com.zaphod.jobsboard.http.validation.syntax.*
 import com.zaphod.jobsboard.http.responses.FailureResponse
@@ -22,12 +23,17 @@ import java.util.UUID
 
 class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends HttpValidationDsl[F] {
 
-  // POST /jobs
+  private object OffsetQueryParam extends OptionalQueryParamDecoderMatcher[Int]("offset")
+  private object LimitQueryParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
+
+
+  // POST /jobs?limit=x&offset=y { filter }
   private val allJobs: HttpRoutes[F] = HttpRoutes.of[F] {
-    case POST -> Root =>
+    case req @ POST -> Root :? LimitQueryParam(limitF) +& OffsetQueryParam(offsetF) =>
       for {
-        all <- jobs.all()
-        res <- Ok(all)
+        filter <- req.as[JobFilter]
+        all    <- jobs.all(filter, Pagination(limitF, offsetF))
+        res    <- Ok(all)
       } yield res
   }
 

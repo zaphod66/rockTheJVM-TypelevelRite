@@ -48,4 +48,14 @@ object job {
         None, None, None, None, None, None, None, None
       )
   }
+
+  final case class JobFilter(
+    companies: List[String]  = List.empty[String],
+    locations: List[String]  = List.empty[String],
+    countries: List[String]  = List.empty[String],
+    senorities: List[String] = List.empty[String],
+    tags: List[String]       = List.empty[String],
+    maxSalary: Option[Int]   = Option.empty[Int],
+    remote: Boolean = false
+  )
 }

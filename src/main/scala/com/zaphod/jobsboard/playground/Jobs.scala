@@ -1,8 +1,11 @@
 package com.zaphod.jobsboard.playground
 
 import cats.effect.{IO, IOApp, Resource}
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import com.zaphod.jobsboard.core.LiveJobs
-import com.zaphod.jobsboard.domain.job.JobInfo
+import com.zaphod.jobsboard.domain.job.{JobFilter, JobInfo}
+import com.zaphod.jobsboard.domain.pagination.Pagination
 import doobie.*
 import doobie.implicits.*
 import doobie.util.*
@@ -26,6 +29,8 @@ object Jobs extends IOApp.Simple {
   private val jobInfo1 = JobInfo.minimal("Home Company", "Engineer", "best job", "home.com", true, "Germany")
   private val jobInfo2 = JobInfo.minimal("Home Company", "Cook", "best cook", "home.com", false, "Germany, Hamburg")
 
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
+
   // connect from cmdline "> docker exec -it rockthejvm-typelevelrite-db-1 psql -U docker"
   override def run: IO[Unit] = pgResource.use { xa =>
     for {
@@ -35,7 +40,7 @@ object Jobs extends IOApp.Simple {
       _ <- IO.println(s"Job id = $id1.")
       id2 <- jobs.create("cto@home.com", jobInfo2)
       _ <- IO.println(s"Job id = $id2.")
-      list1 <- jobs.all()
+      list1 <- jobs.all(JobFilter(), Pagination(Some(20), Some(0)))
       _ <- IO.println(s"All jobs = $list1.")
       _ <- jobs.update(id1, jobInfo1.copy(remote = false))
       job1 <- jobs.find(id1)
