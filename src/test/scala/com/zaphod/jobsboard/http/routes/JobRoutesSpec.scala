@@ -105,6 +105,17 @@ class JobRoutesSpec
       }
     }
 
+    // just tests, if parsing works. Functionality is not yet implemented in the mock
+    "should return all jobs satisfying a filter 3" in {
+      for {
+        resp <-jobRoutesNF.run(Request(method = Method.POST, uri = uri"/jobs").withEntity(JobFilter(tags=List("scala", "zio"))))
+        jobsOk  <- resp.as[List[Job]]
+      } yield {
+        resp.status shouldBe Status.Ok
+        jobsOk shouldBe List(AwesomeJob)
+      }
+    }
+
     "should create a new job" in {
       for {
         resp <-jobRoutesNF.run(Request(method = Method.POST, uri = uri"/jobs/create").withEntity(AwesomeJob.jobInfo))
