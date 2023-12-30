@@ -53,11 +53,11 @@ final class LiveUsers[F[_]: MonadCancelThrow: Logger] private(xa: Transactor[F])
     for {
       _ <-
         sql"""
-            UPDATE user SET
-              hashedPassword, = ${user.hashedPassword},
-              firstName, = ${user.firstName},
-              lastName, = ${user.lastName},
-              company, = ${user.company},
+            UPDATE users SET
+              hashedPassword = ${user.hashedPassword},
+              firstName = ${user.firstName},
+              lastName = ${user.lastName},
+              company = ${user.company},
               role = ${user.role}
             WHERE email=${user.email}
           """

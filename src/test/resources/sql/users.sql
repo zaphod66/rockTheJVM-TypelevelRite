@@ -11,11 +11,11 @@ ALTER TABLE users
 ADD CONSTRAINT pk_users PRIMARY KEY (email);
 
 INSERT INTO users (
-    email
-    hashedPassword
-    firstName
-    lastName
-    company
+    email,
+    hashedPassword,
+    firstName,
+    lastName,
+    company,
     role
 ) VALUES (
     'norbert@home.com',
@@ -27,11 +27,11 @@ INSERT INTO users (
 );
 
 INSERT INTO users (
-    email
-    hashedPassword
-    firstName
-    lastName
-    company
+    email,
+    hashedPassword,
+    firstName,
+    lastName,
+    company,
     role
 ) VALUES (
     'jana@home.com',
