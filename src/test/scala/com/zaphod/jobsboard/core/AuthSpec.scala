@@ -2,6 +2,7 @@ package com.zaphod.jobsboard.core
 
 import cats.data.OptionT
 import cats.effect.IO
+import cats.implicits.*
 import cats.effect.testing.scalatest.AsyncIOSpec
 import com.zaphod.jobsboard.domain.auth.NewPasswordInfo
 import com.zaphod.jobsboard.domain.user.{NewUserInfo, Role, User}
@@ -52,7 +53,7 @@ class AuthSpec
     )
   }
 
-  "Auth 'algebra" - {
+  "Auth 'algebra'" - {
     "login should return None, if user doesn't exist" in {
       val prog = for {
         auth <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
@@ -74,7 +75,7 @@ class AuthSpec
     "login should return token, if user exists" in {
       val prog = for {
         auth  <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
-        token <- auth.login(Norbert.email, Norbert.hashedPassword)
+        token <- auth.login(Norbert.email, "password1")
       } yield token
 
       prog.asserting(_ shouldBe defined)
@@ -128,7 +129,7 @@ class AuthSpec
       val plainPassword = "scalarocks"
       val prog = for {
         auth    <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
-        result  <- auth.changePassword(Norbert.email, NewPasswordInfo(Norbert.hashedPassword, plainPassword))
+        result  <- auth.changePassword(Norbert.email, NewPasswordInfo("password1", plainPassword))
         changed <- result match {
           case Right(Some(user)) =>
             BCrypt.checkpwBool[IO](

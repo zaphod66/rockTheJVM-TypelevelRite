@@ -19,7 +19,7 @@ INSERT INTO users (
     role
 ) VALUES (
     'norbert@home.com',
-    'hashedPassword',
+    '$2a$10$crTNsbU2c/JK3vYgF3ADTedEjHwHur03COlnZd.MJql6Tj7o5IJZK',
     'Norbert',
     'Scheller',
     'Home.com',
@@ -35,7 +35,7 @@ INSERT INTO users (
     role
 ) VALUES (
     'jana@home.com',
-    'hashedPassword',
+    '$2a$10$8b3QoQpH045L57Y1jSKVf.FNvPkeScE6nN7a.SMbVnrt5TXPftq2G',
     'Jana',
     'Otte',
     'Home.com',
