@@ -17,10 +17,14 @@ trait Auth[F[_]] {
       email: String,
       newPasswordInfo: NewPasswordInfo
   ): F[Either[String, Option[User]]]
+
+  def authenticator: Authenticator[F]
 }
 
-class LiveAuth[F[_]: Async: Logger] private (users: Users[F], authenticator: Authenticator[F])
-    extends Auth[F] {
+class LiveAuth[F[_]: Async: Logger] private (
+    users: Users[F],
+    override val authenticator: Authenticator[F]
+) extends Auth[F] {
   override def login(email: String, password: String): F[Option[JwtToken]] =
     for {
       // find user in DB
@@ -67,16 +71,23 @@ class LiveAuth[F[_]: Async: Logger] private (users: Users[F], authenticator: Aut
         updatedUser <- users.update(user.copy(hashedPassword = hashedPW))
       } yield updatedUser
 
-    def updateIfPassCheck(passCheck: Boolean, user: User, newPassword: String): F[Either[String, Option[User]]] =
+    def updateIfPassCheck(
+        passCheck: Boolean,
+        user: User,
+        newPassword: String
+    ): F[Either[String, Option[User]]] =
       if (passCheck) updateUser(user, newPassword).map(Right(_))
       else Left("Invalid password").pure[F]
 
-    def checkAndUpdate(user: User, newPasswordInfo: NewPasswordInfo): F[Either[String, Option[User]]] =
+    def checkAndUpdate(
+        user: User,
+        newPasswordInfo: NewPasswordInfo
+    ): F[Either[String, Option[User]]] =
       for {
         passCheck <- BCrypt.checkpwBool[F](
-            newPasswordInfo.oldPassword,
-            PasswordHash[BCrypt](user.hashedPassword)
-          )
+          newPasswordInfo.oldPassword,
+          PasswordHash[BCrypt](user.hashedPassword)
+        )
         updateResult <- updateIfPassCheck(passCheck, user, newPasswordInfo.newPassword)
 //          if (passCheck) updateUser(user, newPasswordInfo.newPassword).map(Right(_))
 //          else Left("Invalid password")
@@ -84,7 +95,7 @@ class LiveAuth[F[_]: Async: Logger] private (users: Users[F], authenticator: Aut
 
     // find user in DB
     users.find(email).flatMap {
-      case None => Right(None).pure[F]
+      case None       => Right(None).pure[F]
       case Some(user) => checkAndUpdate(user, newPasswordInfo)
     }
   }

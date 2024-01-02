@@ -38,15 +38,6 @@ class AuthRoutesSpec
   // mocks
   ///////////////////////////////////////////
 
-  val mockedAuth: Auth[IO] = new Auth[IO] {
-    def login(email: String, password: String): IO[Option[JwtToken]] = ???
-    def signUp(newUser: NewUserInfo): IO[Option[User]]               = ???
-    def changePassword(
-        email: String,
-        newPasswordInfo: NewPasswordInfo
-    ): IO[Either[String, Option[User]]] = ???
-  }
-
   private val mockedAuthenticator: Authenticator[IO] = {
     // key for hashing
     val key = HMACSHA256.unsafeGenerateKey
@@ -62,6 +53,34 @@ class AuthRoutesSpec
       idStore,  // identity store
       key       // hash key
     )
+  }
+
+  val mockedAuth: Auth[IO] = new Auth[IO] {
+    override def login(email: String, password: String): IO[Option[JwtToken]] =
+      if (email == Norbert.email && password == PlainPasswordNorbert)
+        mockedAuthenticator.create(email).map(Option(_))
+      else
+        IO.pure(None)
+
+    override def signUp(newUser: NewUserInfo): IO[Option[User]] =
+      if (newUser.email == Jana.email)
+        IO.pure(Option(Jana))
+      else
+        IO.pure(None)
+
+    override def changePassword(
+                        email: String,
+                        newPasswordInfo: NewPasswordInfo
+                      ): IO[Either[String, Option[User]]] =
+      if (email == Norbert.email)
+        if (newPasswordInfo.oldPassword == PlainPasswordNorbert)
+          IO.pure(Right(Option(Norbert)))
+        else
+          IO.pure(Left("invalid password"))
+      else
+        IO.pure(Right(None))
+
+    override def authenticator: Authenticator[IO] = mockedAuthenticator
   }
 
   extension (req: Request[IO])
