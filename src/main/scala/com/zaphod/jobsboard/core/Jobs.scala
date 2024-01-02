@@ -152,7 +152,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private(xa: Transactor[F]) extend
 
     val statement = selectFrag |+| fromFrag |+| whereFrag |+| paginationFrag
 
-    Logger[F].info(statement.toString) *>
+//    Logger[F].info(statement.toString) *>
     statement
       .query[Job]
       .to[List]
