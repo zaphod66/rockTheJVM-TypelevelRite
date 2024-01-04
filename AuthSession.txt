@@ -1,0 +1,37 @@
+nschelle@home-towel ~ > http post localhost:4041/api/auth/users email='norbert@home.com' password='secretPW'
+
+nschelle@home-towel ~ > http post localhost:4041/api/auth/login email='norbert@home.com' password='secretPW'
+
+HTTP/1.1 200 OK
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDQ0ODg4MDcsImlhdCI6MTcwNDQwMjQwNywianRpIjoiYTUwNDk3M2E3OGI2NWFiYjE2YWZkZmJjZGUxYTQwZmUifQ.qZeoNGQya_hQ8Gno83rh51BbChENt-ReAOeAl8zaHro
+Connection: keep-alive
+Content-Length: 0
+Date: Thu, 04 Jan 2024 21:06:47 GMT
+
+nschelle@home-towel ~ > http put localhost:4041/api/auth/users/password oldPassword='secretPW' newPassword='simplePW' 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDQ0ODg4MDcsImlhdCI6MTcwNDQwMjQwNywianRpIjoiYTUwNDk3M2E3OGI2NWFiYjE2YWZkZmJjZGUxYTQwZmUifQ.qZeoNGQya_hQ8Gno83rh51BbChENt-ReAOeAl8zaHro'
+
+HTTP/1.1 200 OK
+Connection: keep-alive
+Content-Length: 0
+Date: Thu, 04 Jan 2024 21:11:41 GMT
+
+nschelle@home-towel ~ > http post localhost:4041/api/auth/login email='norbert@home.com' password='secretPW'
+HTTP/1.1 401 Unauthorized
+Connection: keep-alive
+Content-Length: 0
+Date: Thu, 04 Jan 2024 21:13:32 GMT
+
+
+
+nschelle@home-towel ~ > http post localhost:4041/api/auth/login email='norbert@home.com' password='simplePW'
+HTTP/1.1 200 OK
+Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDQ0ODkyMjEsImlhdCI6MTcwNDQwMjgyMSwianRpIjoiNDJmMzBiNTZhZTk1NzkzMDI4NzM1MDY5OGRkNWI1OTUifQ.OcyomjaLw9twngGffPPjOoRXOWf_OuHvVTIn_0HlZko
+Connection: keep-alive
+Content-Length: 0
+Date: Thu, 04 Jan 2024 21:13:41 GMT
+
+nschelle@home-towel ~ > http post localhost:4041/api/auth/logout 'Authorization: Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MDQ0ODkyMjEsImlhdCI6MTcwNDQwMjgyMSwianRpIjoiNDJmMzBiNTZhZTk1NzkzMDI4NzM1MDY5OGRkNWI1OTUifQ.OcyomjaLw9twngGffPPjOoRXOWf_OuHvVTIn_0HlZko'
+HTTP/1.1 200 OK
+Connection: keep-alive
+Content-Length: 0
+Date: Thu, 04 Jan 2024 21:15:20 GMT
