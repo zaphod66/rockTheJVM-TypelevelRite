@@ -14,7 +14,7 @@ trait DatabaseSpec {
   val pgResource: Resource[IO, PostgreSQLContainer[Nothing]] = {
     val acquire = IO {
       val container: PostgreSQLContainer[Nothing] =
-        new PostgreSQLContainer[Nothing]("postgres").withInitScript(initScript)
+        new PostgreSQLContainer[Nothing]("postgres:16-alpine").withInitScript(initScript)
       container.start()
       container
     }

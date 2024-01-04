@@ -1,6 +1,8 @@
 package com.zaphod.jobsboard.domain
 
+import com.zaphod.jobsboard.domain.user.Role.RECRUITER
 import doobie.Meta
+import tsec.authorization.{AuthGroup, SimpleAuthEnum}
 
 object user {
 
@@ -28,5 +30,10 @@ object user {
   object Role {
     given metaRole: Meta[Role] =
       Meta[String].timap[Role](Role.valueOf)(_.toString)
+  }
+
+  given roleAuthEnum: SimpleAuthEnum[Role, String] with {
+    override val values: AuthGroup[Role] = AuthGroup(Role.ADMIN, RECRUITER)
+    override def getRepr(role: Role): String = role.toString
   }
 }

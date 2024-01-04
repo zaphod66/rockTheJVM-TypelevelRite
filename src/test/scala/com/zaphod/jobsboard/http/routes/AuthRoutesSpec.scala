@@ -68,6 +68,10 @@ class AuthRoutesSpec
       else
         IO.pure(None)
 
+    override def delete(email: String): IO[Boolean] =
+      if (email == Norbert.email) IO.pure(true)
+      else IO.pure(false)
+
     override def changePassword(
                         email: String,
                         newPasswordInfo: NewPasswordInfo
@@ -224,6 +228,32 @@ class AuthRoutesSpec
           Request(method = Method.PUT, uri = uri"/auth/users/password")
             .withBearerToken(jwtToken)
             .withEntity(NewPasswordInfo(PlainPasswordNorbert , "newPassword"))
+        )
+      } yield {
+        // assertions here
+        resp.status shouldBe Status.Ok
+      }
+    }
+
+    "delete should return a 401 if non-admin tries to delete a user" in {
+      for {
+        jwtToken <- mockedAuthenticator.create(Jana.email)
+        resp <- authRoutesNF.run(
+          Request(method = Method.DELETE, uri = uri"/auth/users/jana@home.com")
+            .withBearerToken(jwtToken)
+        )
+      } yield {
+        // assertions here
+        resp.status shouldBe Status.Unauthorized
+      }
+    }
+
+    "delete should return a 200 if an admin tries to delete a user" in {
+      for {
+        jwtToken <- mockedAuthenticator.create(Norbert.email)
+        resp <- authRoutesNF.run(
+          Request(method = Method.DELETE, uri = uri"/auth/users/norbert@home.com")
+            .withBearerToken(jwtToken)
         )
       } yield {
         // assertions here

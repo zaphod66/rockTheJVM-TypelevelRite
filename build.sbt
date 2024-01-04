@@ -19,9 +19,10 @@ lazy val javaMailVersion            = "1.6.2"
 
 lazy val server = (project in file("."))
   .settings(
-    name         := "typelevel-project",
-    scalaVersion := scala3Version,
-    organization := comzaphod,
+    name          := "typelevel-project",
+    scalaVersion  := scala3Version,
+    scalacOptions += "-feature",
+    organization  := comzaphod,
     libraryDependencies ++= Seq(
       "org.typelevel"         %% "cats-effect"         % catsEffectVersion,
       "org.http4s"            %% "http4s-dsl"          % http4sVersion,

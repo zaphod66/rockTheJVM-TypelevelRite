@@ -13,6 +13,7 @@ import tsec.passwordhashers.jca.BCrypt
 trait Auth[F[_]] {
   def login(email: String, password: String): F[Option[JwtToken]]
   def signUp(newUser: NewUserInfo): F[Option[User]]
+  def delete(email: String): F[Boolean]
   def changePassword(
       email: String,
       newPasswordInfo: NewPasswordInfo
@@ -60,6 +61,8 @@ class LiveAuth[F[_]: Async: Logger] private (
           _ <- users.create(nUser)
         } yield Some(nUser)
     }
+
+  override def delete(email: String): F[Boolean] = users.delete(email)
 
   override def changePassword(
       email: String,
