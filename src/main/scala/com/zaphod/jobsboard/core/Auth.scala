@@ -1,14 +1,22 @@
 package com.zaphod.jobsboard.core
 
-import cats.effect.Async
+import cats.effect.{Async, Ref}
 import cats.*
+import cats.data.OptionT
 import cats.implicits.*
+import com.zaphod.jobsboard.config.SecurityConfig
 import com.zaphod.jobsboard.domain.auth.NewPasswordInfo
 import com.zaphod.jobsboard.domain.security.{Authenticator, JwtToken}
 import com.zaphod.jobsboard.domain.user.{NewUserInfo, Role, User}
 import org.typelevel.log4cats.Logger
+import tsec.authentication.{BackingStore, IdentityStore, JWTAuthenticator}
+import tsec.common.SecureRandomId
+import tsec.jws.mac.JWTMac
+import tsec.mac.jca.HMACSHA256
 import tsec.passwordhashers.PasswordHash
 import tsec.passwordhashers.jca.BCrypt
+
+import scala.concurrent.duration.*
 
 trait Auth[F[_]] {
   def login(email: String, password: String): F[Option[JwtToken]]
@@ -105,6 +113,43 @@ class LiveAuth[F[_]: Async: Logger] private (
 }
 
 object LiveAuth {
-  def apply[F[_]: Async: Logger](users: Users[F], authenticator: Authenticator[F]): F[LiveAuth[F]] =
-    new LiveAuth[F](users, authenticator).pure[F]
+  def apply[F[_]: Async: Logger](users: Users[F])(securityConfig: SecurityConfig): F[LiveAuth[F]] = {
+
+    // 1. identity store
+    val idStore: IdentityStore[F, String, User] = (email: String) =>
+      OptionT[F, User](users.find(email))
+
+    // 2. backing store for JWT tokens: BackingStore[F, id, JwtToken]
+    val tokenStoreF = Ref.of[F, Map[SecureRandomId, JwtToken]](Map.empty).map { ref =>
+      new BackingStore[F, SecureRandomId, JwtToken] {
+        override def get(id: SecureRandomId): OptionT[F, JwtToken] =
+          OptionT(ref.get.map(_.get(id)))
+
+        override def put(elem: JwtToken): F[JwtToken] =
+          ref.modify(store => (store + (elem.id -> elem), elem))
+
+        override def update(v: JwtToken): F[JwtToken] =
+          put(v)
+
+        override def delete(id: SecureRandomId): F[Unit] =
+          ref.modify(store => (store - id, ()))
+      }
+    }
+
+    // 3. key for hashing
+    val keyF = HMACSHA256.buildKey[F](securityConfig.secret.getBytes("UTF-8"))
+
+    // 4. authenticator
+    for {
+      key <- keyF
+      tokenStore <- tokenStoreF
+      authenticator = JWTAuthenticator.backed.inBearerToken(
+        expiryDuration = securityConfig.jwtExpiryDuration, // expiration of tokens
+        maxIdle = None, // max idle time (optional)
+        tokenStore = tokenStore,
+        identityStore = idStore, // identity store
+        signingKey = key // hash key
+      )
+    } yield new LiveAuth[F](users, authenticator)
+  }
 }

@@ -4,6 +4,7 @@ import cats.data.OptionT
 import cats.effect.IO
 import cats.implicits.*
 import cats.effect.testing.scalatest.AsyncIOSpec
+import com.zaphod.jobsboard.config.SecurityConfig
 import com.zaphod.jobsboard.domain.auth.NewPasswordInfo
 import com.zaphod.jobsboard.domain.user.{NewUserInfo, Role, User}
 import com.zaphod.jobsboard.domain.security.Authenticator
@@ -36,27 +37,11 @@ class AuthSpec
     override def delete(email: String): IO[Boolean] = IO.pure(true)
   }
 
-  private val mockedAuthenticator: Authenticator[IO] = {
-    // key for hashing
-    val key = HMACSHA256.unsafeGenerateKey
-    // identity store to retrieve users
-    val idStore: IdentityStore[IO, String, User] = (email: String) =>
-      if (email == Norbert.email) OptionT.pure(Norbert)
-      else if (email == Jana.email) OptionT.pure(Jana)
-      else OptionT.none[IO, User]
-    // jwt authenticator
-    JWTAuthenticator.unbacked.inBearerToken(
-      1.day,    // expiration of tokens
-      None,     // max idle time (optional)
-      idStore,  // identity store
-      key       // hash key
-    )
-  }
-
+  private val mockedAuthF = LiveAuth[IO](mockedUsers)(SecurityConfig("secret", 1.day))
   "Auth 'algebra'" - {
     "login should return None, if user doesn't exist" in {
       val prog = for {
-        auth <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
+        auth <- mockedAuthF
         token <- auth.login("none@home.com", "password")
       } yield token
 
@@ -65,7 +50,7 @@ class AuthSpec
 
     "login should return None, if user exists but password is wrong" in {
       val prog = for {
-        auth  <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
+        auth  <- mockedAuthF
         token <- auth.login(Norbert.email, "wrong password")
       } yield token
 
@@ -74,7 +59,7 @@ class AuthSpec
 
     "login should return token, if user exists" in {
       val prog = for {
-        auth  <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
+        auth  <- mockedAuthF
         token <- auth.login(Norbert.email, "password1")
       } yield token
 
@@ -83,7 +68,7 @@ class AuthSpec
 
     "signup should return none, if user exists" in {
       val prog = for {
-        auth <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
+        auth <- mockedAuthF
         user <- auth.signUp(NewUserInfo(Norbert.email, Norbert.hashedPassword, None, None, None))
       } yield user
 
@@ -92,7 +77,7 @@ class AuthSpec
 
     "signup should return a user , if user doesn't exist" in {
       val prog = for {
-        auth <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
+        auth <- mockedAuthF
         user <- auth.signUp(NewUserInfo(NewUser.email, NewUser.hashedPassword, NewUser.firstName, NewUser.lastName, NewUser.company))
       } yield user
 
@@ -109,7 +94,7 @@ class AuthSpec
 
     "changePassword should return Right(None), if user doesn't exist" in {
       val prog = for {
-        auth   <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
+        auth   <- mockedAuthF
         result <- auth.changePassword(NewUser.email, NewPasswordInfo("oldpw", "newpw"))
       } yield result
 
@@ -118,7 +103,7 @@ class AuthSpec
 
     "changePassword should return Left(Error), if user exists but password is wrong" in {
       val prog = for {
-        auth   <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
+        auth   <- mockedAuthF
         result <- auth.changePassword(Norbert.email, NewPasswordInfo("oldpw", "newpw"))
       } yield result
 
@@ -128,7 +113,7 @@ class AuthSpec
     "changePassword should change password, if details are correct" in {
       val plainPassword = "scalarocks"
       val prog = for {
-        auth    <- LiveAuth[IO](mockedUsers, mockedAuthenticator)
+        auth    <- mockedAuthF
         result  <- auth.changePassword(Norbert.email, NewPasswordInfo("password1", plainPassword))
         changed <- result match {
           case Right(Some(user)) =>

@@ -21,10 +21,10 @@ object Application extends IOApp.Simple {
 
   override def run: IO[Unit] =
     ConfigSource.default.loadF[IO, AppConfig].flatMap {
-      case AppConfig(dbConfig, emberConfig) =>
+      case AppConfig(dbConfig, emberConfig, securityConfig) =>
         val appServer = for {
           xa <- Database[IO](dbConfig)
-          core <- Core[IO](xa)
+          core <- Core[IO](xa)(securityConfig)
           http <- HttpApi[IO](core)
           server <- EmberServerBuilder
             .default[IO]

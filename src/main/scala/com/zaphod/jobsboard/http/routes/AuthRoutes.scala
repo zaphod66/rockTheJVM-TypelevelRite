@@ -15,7 +15,8 @@ import com.zaphod.jobsboard.domain.user.{NewUserInfo, User}
 import com.zaphod.jobsboard.http.responses.FailureResponse
 import com.zaphod.jobsboard.http.validation.syntax.HttpValidationDsl
 
-import java.time.Instant
+import scala.language.implicitConversions
+//import java.time.Instant
 
 class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpValidationDsl[F] {
 
