@@ -4,7 +4,7 @@ import cats.{Monad, MonadThrow, Semigroup}
 import cats.implicits.*
 import com.zaphod.jobsboard.domain.user.*
 import org.http4s.{Response, Status}
-import tsec.authentication.{AugmentedJWT, JWTAuthenticator, SecuredRequest, TSecAuthService}
+import tsec.authentication.{AugmentedJWT, JWTAuthenticator, SecuredRequestHandler, SecuredRequest, TSecAuthService}
 import tsec.authorization.{AuthorizationInfo, BasicRBAC}
 import tsec.mac.jca.HMACSHA256
 
@@ -18,6 +18,8 @@ object security {
   type AuthRoute[F[_]] = PartialFunction[SecuredRequest[F, User, JwtToken], F[Response[F]]]
   type AuthRBAC[F[_]] = BasicRBAC[F, Role, User, JwtToken]
 
+  type SecuredHandler[F[_]] = SecuredRequestHandler[F, String, User, JwtToken]
+  
   // RBAC
 
   given authRole[F[_]: MonadThrow]: AuthorizationInfo[F, Role, User] with {

@@ -1,26 +1,26 @@
 package com.zaphod.jobsboard.http.routes
 
 import cats.data.OptionT
-import cats.implicits.*
 import cats.effect.IO
 import cats.effect.testing.scalatest.AsyncIOSpec
-import io.circe.generic.auto.*
-import org.http4s.circe.CirceEntityCodec.*
-import org.http4s.*
-import org.http4s.dsl.*
-import org.http4s.implicits.*
-import org.typelevel.log4cats.Logger
-import org.typelevel.log4cats.slf4j.Slf4jLogger
-import org.scalatest.freespec.AsyncFreeSpec
-import org.scalatest.matchers.should.Matchers
+import cats.implicits.*
 import com.zaphod.jobsboard.core.Auth
 import com.zaphod.jobsboard.domain.auth.{LoginInfo, NewPasswordInfo}
 import com.zaphod.jobsboard.domain.security.{Authenticator, JwtToken}
 import com.zaphod.jobsboard.domain.user.{NewUserInfo, User}
-import com.zaphod.jobsboard.fixtures.UsersFixture
+import com.zaphod.jobsboard.fixtures.{SecuredFixture, UsersFixture}
 import com.zaphod.jobsboard.util.Syntax.*
+import io.circe.generic.auto.*
+import org.http4s.circe.CirceEntityCodec.*
+import org.http4s.*
+import org.http4s.dsl.*
 import org.http4s.headers.Authorization
+import org.http4s.implicits.*
+import org.scalatest.freespec.AsyncFreeSpec
+import org.scalatest.matchers.should.Matchers
 import org.typelevel.ci.CIStringSyntax
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 import tsec.authentication.{IdentityStore, JWTAuthenticator}
 import tsec.jws.mac.JWTMac
 import tsec.mac.jca.HMACSHA256
@@ -32,28 +32,13 @@ class AuthRoutesSpec
   with AsyncIOSpec
   with Matchers
   with Http4sDsl[IO]
+  with SecuredFixture
   with UsersFixture
 {
   ///////////////////////////////////////////
   // mocks
   ///////////////////////////////////////////
 
-  private val mockedAuthenticator: Authenticator[IO] = {
-    // key for hashing
-    val key = HMACSHA256.unsafeGenerateKey
-    // identity store to retrieve users
-    val idStore: IdentityStore[IO, String, User] = (email: String) =>
-      if (email == Norbert.email) OptionT.pure(Norbert)
-      else if (email == Jana.email) OptionT.pure(Jana)
-      else OptionT.none[IO, User]
-    // jwt authenticator
-    JWTAuthenticator.unbacked.inBearerToken(
-      1.day,    // expiration of tokens
-      None,     // max idle time (optional)
-      idStore,  // identity store
-      key       // hash key
-    )
-  }
 
   val mockedAuth: Auth[IO] = new Auth[IO] {
     override def login(email: String, password: String): IO[Option[JwtToken]] =
@@ -87,13 +72,6 @@ class AuthRoutesSpec
     override def authenticator: Authenticator[IO] = mockedAuthenticator
   }
 
-  extension (req: Request[IO])
-    def withBearerToken(a: JwtToken): Request[IO] =
-      req.putHeaders {
-        val jwtString = JWTMac.toEncodedString[IO, HMACSHA256](a.jwt)
-        // Authorization: Bearer {jwt}
-        Authorization(Credentials.Token(AuthScheme.Bearer, jwtString))
-      }
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   private val authRoutes: HttpRoutes[IO] = AuthRoutes[IO](mockedAuth).routes

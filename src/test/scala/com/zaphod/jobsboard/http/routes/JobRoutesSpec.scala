@@ -13,10 +13,14 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 import com.zaphod.jobsboard.core.Jobs
-import com.zaphod.jobsboard.domain.job.{Job, JobInfo, JobFilter}
+import com.zaphod.jobsboard.domain.job.{Job, JobFilter, JobInfo}
 import com.zaphod.jobsboard.domain.pagination.Pagination
-import com.zaphod.jobsboard.fixtures.JobsFixture
+import com.zaphod.jobsboard.domain.security.JwtToken
+import com.zaphod.jobsboard.fixtures.{JobsFixture, SecuredFixture}
 import com.zaphod.jobsboard.util.Syntax.*
+import org.http4s.headers.Authorization
+import tsec.jws.mac.JWTMac
+import tsec.mac.jca.HMACSHA256
 
 import java.util.UUID
 
@@ -25,6 +29,7 @@ class JobRoutesSpec
   with AsyncIOSpec
   with Matchers
   with Http4sDsl[IO]
+  with SecuredFixture
   with JobsFixture
 {
 
@@ -55,7 +60,7 @@ class JobRoutesSpec
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  private val jobRoutes: HttpRoutes[IO] = JobRoutes[IO](jobs).routes
+  private val jobRoutes: HttpRoutes[IO] = JobRoutes[IO](jobs, mockedAuthenticator).routes
   private val jobRoutesNF = jobRoutes.orNotFound
 
   ///////////////////////////////////////////
@@ -118,7 +123,13 @@ class JobRoutesSpec
 
     "should create a new job" in {
       for {
-        resp <-jobRoutesNF.run(Request(method = Method.POST, uri = uri"/jobs/create").withEntity(AwesomeJob.jobInfo))
+        jwtToken <- mockedAuthenticator.create(Norbert.email)
+        resp <-jobRoutesNF.run(
+          Request(method = Method.POST, uri = uri"/jobs/create")
+            .withBearerToken(jwtToken)
+            .withEntity(AwesomeJob.jobInfo)
+          )
+
         uuid <- resp.as[UUID]
       } yield {
         resp.status shouldBe Status.Created
@@ -126,26 +137,51 @@ class JobRoutesSpec
       }
     }
 
-    "should update a job" in {
+    "should update a job that the JWTtoken 'owns'" in {
       for {
-        respOk <-jobRoutesNF.run(Request(method = Method.PUT, uri = uri"/jobs/843df718-ec6e-4d49-9289-f799c0f40064")
-          .withEntity(UpdatedAwesomeJob.jobInfo))
+        jwtToken <- mockedAuthenticator.create(Norbert.email)
+        respOk <-jobRoutesNF.run(
+          Request(method = Method.PUT, uri = uri"/jobs/843df718-ec6e-4d49-9289-f799c0f40064")
+            .withBearerToken(jwtToken)
+            .withEntity(UpdatedAwesomeJob.jobInfo)
+        )
 
-        respFail <-jobRoutesNF.run(Request(method = Method.PUT, uri = uri"/jobs/6ea79557-3112-4c84-a8f5-1d1e2c300948")
-          .withEntity(UpdatedAwesomeJob.jobInfo))
+        respFail <-jobRoutesNF.run(
+          Request(method = Method.PUT, uri = uri"/jobs/6ea79557-3112-4c84-a8f5-1d1e2c300948")
+            .withBearerToken(jwtToken)
+            .withEntity(UpdatedAwesomeJob.jobInfo)
+        )
       } yield {
         respOk.status shouldBe Status.Ok
         respFail.status shouldBe Status.NotFound
       }
     }
 
+    "should forbid updating a job that the JWTtoken doesn't 'own'" in {
+      for {
+        jwtToken <- mockedAuthenticator.create(Jana.email)
+        resp <-jobRoutesNF.run(
+          Request(method = Method.PUT, uri = uri"/jobs/843df718-ec6e-4d49-9289-f799c0f40064")
+            .withBearerToken(jwtToken)
+            .withEntity(UpdatedAwesomeJob.jobInfo)
+        )
+      } yield {
+        resp.status shouldBe Status.Forbidden
+      }
+    }
+
     "should delete a job" in {
       for {
-        respOk <-jobRoutesNF.run(Request(method = Method.DELETE, uri = uri"/jobs/843df718-ec6e-4d49-9289-f799c0f40064")
-          .withEntity(UpdatedAwesomeJob.jobInfo))
+        jwtToken <- mockedAuthenticator.create(Norbert.email)
+        respOk <-jobRoutesNF.run(
+          Request(method = Method.DELETE, uri = uri"/jobs/843df718-ec6e-4d49-9289-f799c0f40064")
+            .withBearerToken(jwtToken)
+          )
 
-        respFail <-jobRoutesNF.run(Request(method = Method.DELETE, uri = uri"/jobs/6ea79557-3112-4c84-a8f5-1d1e2c300948")
-          .withEntity(UpdatedAwesomeJob.jobInfo))
+        respFail <-jobRoutesNF.run(
+          Request(method = Method.DELETE, uri = uri"/jobs/6ea79557-3112-4c84-a8f5-1d1e2c300948")
+            .withBearerToken(jwtToken)
+        )
       } yield {
         respOk.status shouldBe Status.Ok
         respFail.status shouldBe Status.NotFound

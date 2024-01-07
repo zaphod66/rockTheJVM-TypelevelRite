@@ -1,5 +1,6 @@
 package com.zaphod.jobsboard.domain
 
+import com.zaphod.jobsboard.domain.job.Job
 import com.zaphod.jobsboard.domain.user.Role.RECRUITER
 import doobie.Meta
 import tsec.authorization.{AuthGroup, SimpleAuthEnum}
@@ -13,7 +14,11 @@ object user {
       lastName: Option[String],
       company: Option[String],
       role: Role
-  )
+  ) {
+    def isAdmin: Boolean = role == Role.ADMIN
+    def isRecruiter: Boolean = role == Role.RECRUITER
+    def owns(job: Job): Boolean = email == job.ownerEmail
+  }
 
   final case class NewUserInfo(
       email: String,

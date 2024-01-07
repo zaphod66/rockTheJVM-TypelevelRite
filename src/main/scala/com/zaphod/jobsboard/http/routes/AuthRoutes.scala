@@ -20,7 +20,7 @@ import scala.language.implicitConversions
 
 class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpValidationDsl[F] {
 
-  private val securedHandler: SecuredRequestHandler[F, String, User, JwtToken] = SecuredRequestHandler(auth.authenticator)
+  private val securedHandler: SecuredHandler[F] = SecuredRequestHandler(auth.authenticator)
 
   // POST /auth/login { LoginInfo } => 200 Ok with Authorization: Bearer { jwt }
   private val login: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "login" =>
