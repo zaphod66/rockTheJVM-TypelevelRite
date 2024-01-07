@@ -27,9 +27,7 @@ import scala.language.implicitConversions
 import java.util
 import java.util.UUID
 
-class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F], authenticator: Authenticator[F]) extends HttpValidationDsl[F] {
-
-  private val securedHandler: SecuredHandler[F] = SecuredRequestHandler(authenticator)
+class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]) extends HttpValidationDsl[F] {
 
   private object OffsetQueryParam extends OptionalQueryParamDecoderMatcher[Int]("offset")
   private object LimitQueryParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
@@ -94,7 +92,7 @@ class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F], authenticator:
   }
 
   private val unauthedRoutes = allJobs <+> findJob
-  private val authedRoutes = securedHandler.liftService(
+  private val authedRoutes = SecuredHandler[F].liftService(
     createJob.restrictedTo(allRoles) |+|
     deleteJob.restrictedTo(allRoles) |+|
     updateJob.restrictedTo(allRoles)
@@ -106,5 +104,5 @@ class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F], authenticator:
 }
 
 object JobRoutes {
-  def apply[F[_]: Concurrent: Logger](jobs: Jobs[F], authenticator: Authenticator[F]) = new JobRoutes[F](jobs, authenticator)
+  def apply[F[_]: Concurrent: Logger: SecuredHandler](jobs: Jobs[F]) = new JobRoutes[F](jobs)
 }

@@ -18,20 +18,19 @@ import com.zaphod.jobsboard.http.validation.syntax.HttpValidationDsl
 import scala.language.implicitConversions
 //import java.time.Instant
 
-class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpValidationDsl[F] {
-
-  private val securedHandler: SecuredHandler[F] = SecuredRequestHandler(auth.authenticator)
+class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (auth: Auth[F], authenticator: Authenticator[F]) extends HttpValidationDsl[F] {
 
   // POST /auth/login { LoginInfo } => 200 Ok with Authorization: Bearer { jwt }
   private val login: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "login" =>
     req.validate[LoginInfo] { loginInfo =>
       val jwtTokenM = for {
-        tokenM <- auth.login(loginInfo.email, loginInfo.password)
-        _ <- Logger[F].info(s"User logging in: ${loginInfo.email}")
-      } yield tokenM
+        userM    <- auth.login(loginInfo.email, loginInfo.password)
+        _        <- Logger[F].info(s"User logging in: ${loginInfo.email}")
+        jwtToken <- userM.traverse(user => authenticator.create(user.email))
+      } yield jwtToken
 
       jwtTokenM.map {
-        case Some(token) => auth.authenticator.embed(Response(Status.Ok), token) // Authorization: Bearer { jwt }
+        case Some(token) => authenticator.embed(Response(Status.Ok), token) // Authorization: Bearer { jwt }
         case None => Response(Status.Unauthorized)
       }
     }
@@ -65,8 +64,6 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
       }
   }
 
-  private val authenticator = auth.authenticator
-
   // POST /auth/logout { Authorization: Bearer { jwt } } => 200 Ok
   private val logout: AuthRoute[F] = {
     case req @ POST -> Root / "logout" asAuthed _ =>
@@ -87,7 +84,7 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
   }
 
   private val unauthedRoutes = login <+> createUser
-  private val authedRoutes   = securedHandler.liftService(
+  private val authedRoutes   = SecuredHandler[F].liftService(
     changePassword.restrictedTo(allRoles) |+|
     logout.restrictedTo(allRoles) |+|
     deleteUser.restrictedTo(adminOnly)
@@ -99,5 +96,6 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
 }
 
 object AuthRoutes {
-  def apply[F[_]: Concurrent: Logger](auth: Auth[F]) = new AuthRoutes[F](auth)
+  def apply[F[_]: Concurrent: Logger: SecuredHandler](auth: Auth[F], authenticator: Authenticator[F]) =
+    new AuthRoutes[F](auth, authenticator)
 }

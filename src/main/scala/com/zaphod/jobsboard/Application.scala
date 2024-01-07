@@ -24,8 +24,8 @@ object Application extends IOApp.Simple {
       case AppConfig(dbConfig, emberConfig, securityConfig) =>
         val appServer = for {
           xa <- Database[IO](dbConfig)
-          core <- Core[IO](xa)(securityConfig)
-          http <- HttpApi[IO](core)
+          core <- Core[IO](xa)
+          http <- HttpApi[IO](core, securityConfig)
           server <- EmberServerBuilder
             .default[IO]
             .withHost(emberConfig.host)

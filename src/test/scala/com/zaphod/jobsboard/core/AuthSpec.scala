@@ -37,7 +37,7 @@ class AuthSpec
     override def delete(email: String): IO[Boolean] = IO.pure(true)
   }
 
-  private val mockedAuthF = LiveAuth[IO](mockedUsers)(SecurityConfig("secret", 1.day))
+  private val mockedAuthF = LiveAuth[IO](mockedUsers)
   "Auth 'algebra'" - {
     "login should return None, if user doesn't exist" in {
       val prog = for {
