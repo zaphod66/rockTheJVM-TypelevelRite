@@ -1,5 +1,7 @@
 package com.zaphod.jobsboard.fixtures
 
+import cats.effect.IO
+import com.zaphod.jobsboard.core.Users
 import com.zaphod.jobsboard.domain.user.*
 
 // password1 => $2a$10$crTNsbU2c/JK3vYgF3ADTedEjHwHur03COlnZd.MJql6Tj7o5IJZK
@@ -8,6 +10,18 @@ import com.zaphod.jobsboard.domain.user.*
 // password4 => $2a$10$QUgh6Tw41hIo4bofKggMbew1rR6vZyiWEAAQEqsmsLBf.V5BNW.3C
 
 trait UsersFixture {
+  val mockedUsers: Users[IO] = new Users[IO] {
+    override def find(email: String): IO[Option[User]] =
+      if (email == Norbert.email) IO.pure(Some(Norbert))
+      else IO.pure(Option.empty[User])
+
+    override def create(user: User): IO[String] = IO.pure(user.email)
+
+    override def update(user: User): IO[Option[User]] = IO.pure(Some(user))
+
+    override def delete(email: String): IO[Boolean] = IO.pure(true)
+  }
+
   val Norbert: User = User(
     "norbert@home.com",
     "$2a$10$crTNsbU2c/JK3vYgF3ADTedEjHwHur03COlnZd.MJql6Tj7o5IJZK", // "password1"

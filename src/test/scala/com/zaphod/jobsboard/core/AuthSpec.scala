@@ -28,15 +28,6 @@ class AuthSpec
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  private val mockedUsers: Users[IO] = new Users[IO] {
-    override def find(email: String): IO[Option[User]] =
-      if (email == Norbert.email) IO.pure(Some(Norbert))
-      else IO.pure(Option.empty[User])
-    override def create(user: User): IO[String] = IO.pure(user.email)
-    override def update(user: User): IO[Option[User]] = IO.pure(Some(user))
-    override def delete(email: String): IO[Boolean] = IO.pure(true)
-  }
-
   private val mockedAuthF = LiveAuth[IO](mockedUsers)
   "Auth 'algebra'" - {
     "login should return None, if user doesn't exist" in {
